@@ -14,11 +14,12 @@ func domainShipmentToProto(s *domain.Shipment) *pb.ShipmentResponse {
 		Origin:          s.Origin,
 		Destination:     s.Destination,
 		Status:          string(s.Status),
-		DriverName:      s.DriverName,
-		DriverPhone:     s.DriverPhone,
-		UnitNumber:      s.UnitNumber,
+		TransportMode:   domainTransportModeToProto(s.TransportMode),
+		OperatorName:    s.CarrierInfo.OperatorName,
+		OperatorPhone:   s.CarrierInfo.OperatorPhone,
+		UnitIdentifier:  s.CarrierInfo.UnitIdentifier,
 		Amount:          s.Amount,
-		DriverRevenue:   s.DriverRevenue,
+		CarrierRevenue:  s.CarrierRevenue,
 		CreatedAt:       s.CreatedAt.Format(time.RFC3339),
 		UpdatedAt:       s.UpdatedAt.Format(time.RFC3339),
 	}
@@ -31,5 +32,35 @@ func domainEventToProto(e *domain.ShipmentEvent) *pb.ShipmentEvent {
 		Status:     string(e.Status),
 		Note:       e.Note,
 		OccurredAt: e.OccurredAt.Format(time.RFC3339),
+	}
+}
+
+func protoTransportModeToDomain(m pb.TransportMode) domain.TransportMode {
+	switch m {
+	case pb.TransportMode_TRANSPORT_MODE_TRUCK:
+		return domain.TransportModeTruck
+	case pb.TransportMode_TRANSPORT_MODE_AIR:
+		return domain.TransportModeAir
+	case pb.TransportMode_TRANSPORT_MODE_SEA:
+		return domain.TransportModeSea
+	case pb.TransportMode_TRANSPORT_MODE_RAIL:
+		return domain.TransportModeRail
+	default:
+		return ""
+	}
+}
+
+func domainTransportModeToProto(m domain.TransportMode) pb.TransportMode {
+	switch m {
+	case domain.TransportModeTruck:
+		return pb.TransportMode_TRANSPORT_MODE_TRUCK
+	case domain.TransportModeAir:
+		return pb.TransportMode_TRANSPORT_MODE_AIR
+	case domain.TransportModeSea:
+		return pb.TransportMode_TRANSPORT_MODE_SEA
+	case domain.TransportModeRail:
+		return pb.TransportMode_TRANSPORT_MODE_RAIL
+	default:
+		return pb.TransportMode_TRANSPORT_MODE_UNSPECIFIED
 	}
 }

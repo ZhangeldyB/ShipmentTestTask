@@ -11,12 +11,11 @@ type Shipment struct {
 	ReferenceNumber string
 	Origin          string
 	Destination     string
+	TransportMode   TransportMode
+	CarrierInfo     CarrierInfo
 	Status          Status
-	DriverName      string
-	DriverPhone     string
-	UnitNumber      string
 	Amount          float64
-	DriverRevenue   float64
+	CarrierRevenue  float64
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
 }

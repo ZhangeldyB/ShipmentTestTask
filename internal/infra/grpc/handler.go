@@ -38,11 +38,14 @@ func (h *ShipmentHandler) CreateShipment(ctx context.Context, req *pb.CreateShip
 	shipment, err := h.createShipment.Execute(ctx, app.CreateShipmentInput{
 		Origin:        req.Origin,
 		Destination:   req.Destination,
-		DriverName:    req.DriverName,
-		DriverPhone:   req.DriverPhone,
-		UnitNumber:    req.UnitNumber,
-		Amount:        req.Amount,
-		DriverRevenue: req.DriverRevenue,
+		TransportMode: protoTransportModeToDomain(req.TransportMode),
+		CarrierInfo: domain.CarrierInfo{
+			OperatorName:   req.OperatorName,
+			OperatorPhone:  req.OperatorPhone,
+			UnitIdentifier: req.UnitIdentifier,
+		},
+		Amount:         req.Amount,
+		CarrierRevenue: req.CarrierRevenue,
 	})
 	if err != nil {
 		return nil, mapError(err)
@@ -89,9 +92,10 @@ func mapError(err error) error {
 		return status.Error(codes.FailedPrecondition, err.Error())
 	case errors.Is(err, domain.ErrDuplicateStatus):
 		return status.Error(codes.AlreadyExists, err.Error())
-	case errors.Is(err, domain.ErrInvalidAmount):
-		return status.Error(codes.InvalidArgument, err.Error())
-	case errors.Is(err, domain.ErrInvalidRevenue):
+	case errors.Is(err, domain.ErrInvalidAmount),
+		errors.Is(err, domain.ErrInvalidRevenue),
+		errors.Is(err, domain.ErrInvalidTransportMode),
+		errors.Is(err, domain.ErrInvalidCarrier):
 		return status.Error(codes.InvalidArgument, err.Error())
 	default:
 		return status.Error(codes.Internal, err.Error())

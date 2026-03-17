@@ -12,13 +12,12 @@ import (
 )
 
 type CreateShipmentInput struct {
-	Origin        string
-	Destination   string
-	DriverName    string
-	DriverPhone   string
-	UnitNumber    string
-	Amount        float64
-	DriverRevenue float64
+	Origin         string
+	Destination    string
+	TransportMode  domain.TransportMode
+	CarrierInfo    domain.CarrierInfo
+	Amount         float64
+	CarrierRevenue float64
 }
 
 type CreateShipmentUseCase struct {
@@ -30,10 +29,16 @@ func NewCreateShipmentUseCase(repo ShipmentRepository) *CreateShipmentUseCase {
 }
 
 func (uc *CreateShipmentUseCase) Execute(ctx context.Context, in CreateShipmentInput) (*domain.Shipment, error) {
+	if err := in.TransportMode.Validate(); err != nil {
+		return nil, err
+	}
+	if err := in.CarrierInfo.Validate(); err != nil {
+		return nil, err
+	}
 	if in.Amount <= 0 {
 		return nil, domain.ErrInvalidAmount
 	}
-	if in.DriverRevenue <= 0 || in.DriverRevenue > in.Amount {
+	if in.CarrierRevenue <= 0 || in.CarrierRevenue > in.Amount {
 		return nil, domain.ErrInvalidRevenue
 	}
 
@@ -44,12 +49,11 @@ func (uc *CreateShipmentUseCase) Execute(ctx context.Context, in CreateShipmentI
 		ReferenceNumber: generateReferenceNumber(now),
 		Origin:          in.Origin,
 		Destination:     in.Destination,
+		TransportMode:   in.TransportMode,
+		CarrierInfo:     in.CarrierInfo,
 		Status:          domain.StatusPending,
-		DriverName:      in.DriverName,
-		DriverPhone:     in.DriverPhone,
-		UnitNumber:      in.UnitNumber,
 		Amount:          in.Amount,
-		DriverRevenue:   in.DriverRevenue,
+		CarrierRevenue:  in.CarrierRevenue,
 		CreatedAt:       now,
 		UpdatedAt:       now,
 	}

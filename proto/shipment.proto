@@ -4,6 +4,14 @@ package shipment.v1;
 
 option go_package = "github.com/ZhangeldyB/ShipmentTestTask/gen/shipment/v1";
 
+enum TransportMode {
+  TRANSPORT_MODE_UNSPECIFIED = 0;
+  TRANSPORT_MODE_TRUCK       = 1;
+  TRANSPORT_MODE_AIR         = 2;
+  TRANSPORT_MODE_SEA         = 3;
+  TRANSPORT_MODE_RAIL        = 4;
+}
+
 service ShipmentService {
   rpc CreateShipment(CreateShipmentRequest) returns (ShipmentResponse);
   rpc GetShipment(GetShipmentRequest) returns (ShipmentResponse);
@@ -12,13 +20,14 @@ service ShipmentService {
 }
 
 message CreateShipmentRequest {
-  string origin = 1;
-  string destination = 2;
-  double amount = 3;
-  double driver_revenue = 4;
-  string driver_name = 5;
-  string driver_phone = 6;
-  string unit_number = 7;
+  string        origin          = 1;
+  string        destination     = 2;
+  double        amount          = 3;
+  double        carrier_revenue = 4;
+  TransportMode transport_mode  = 5;
+  string        operator_name   = 6;
+  string        operator_phone  = 7;
+  string        unit_identifier = 8;
 }
 
 message GetShipmentRequest {
@@ -27,8 +36,8 @@ message GetShipmentRequest {
 
 message AddStatusEventRequest {
   string shipment_id = 1;
-  string new_status = 2;
-  string note = 3;
+  string new_status  = 2;
+  string note        = 3;
 }
 
 message GetShipmentEventsRequest {
@@ -36,25 +45,26 @@ message GetShipmentEventsRequest {
 }
 
 message ShipmentResponse {
-  string id = 1;
-  string reference_number = 2;
-  string origin = 3;
-  string destination = 4;
-  string status = 5;
-  string driver_name = 6;
-  string driver_phone = 7;
-  string unit_number = 8;
-  double amount = 9;
-  double driver_revenue = 10;
-  string created_at = 11;
-  string updated_at = 12;
+  string        id               = 1;
+  string        reference_number = 2;
+  string        origin           = 3;
+  string        destination      = 4;
+  string        status           = 5;
+  TransportMode transport_mode   = 6;
+  string        operator_name    = 7;
+  string        operator_phone   = 8;
+  string        unit_identifier  = 9;
+  double        amount           = 10;
+  double        carrier_revenue  = 11;
+  string        created_at       = 12;
+  string        updated_at       = 13;
 }
 
 message ShipmentEvent {
-  string id = 1;
+  string id          = 1;
   string shipment_id = 2;
-  string status = 3;
-  string note = 4;
+  string status      = 3;
+  string note        = 4;
   string occurred_at = 5;
 }
 

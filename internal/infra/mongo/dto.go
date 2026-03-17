@@ -7,12 +7,13 @@ type shipmentDoc struct {
 	ReferenceNumber string    `bson:"reference_number"`
 	Origin          string    `bson:"origin"`
 	Destination     string    `bson:"destination"`
+	TransportMode   string    `bson:"transport_mode"`
+	OperatorName    string    `bson:"operator_name"`
+	OperatorPhone   string    `bson:"operator_phone"`
+	UnitIdentifier  string    `bson:"unit_identifier"`
 	Status          string    `bson:"status"`
-	DriverName      string    `bson:"driver_name"`
-	DriverPhone     string    `bson:"driver_phone"`
-	UnitNumber      string    `bson:"unit_number"`
 	Amount          float64   `bson:"amount"`
-	DriverRevenue   float64   `bson:"driver_revenue"`
+	CarrierRevenue  float64   `bson:"carrier_revenue"`
 	CreatedAt       time.Time `bson:"created_at"`
 	UpdatedAt       time.Time `bson:"updated_at"`
 }
