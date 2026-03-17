@@ -21,10 +21,17 @@ func main() {
 	grpcPort := getenv("GRPC_PORT", "50051")
 	databaseURL := mustGetenv("DATABASE_URL")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+	// Tuned for high-load: allow up to 100 connections, keep at least 10
+	// warm so the pool never drops to zero under burst traffic.
+	clientOpts := options.Client().
+		ApplyURI(databaseURL).
+		SetMaxPoolSize(100).
+		SetMinPoolSize(10).
+		SetMaxConnIdleTime(60 * time.Second).
+		SetConnectTimeout(5 * time.Second).
+		SetServerSelectionTimeout(5 * time.Second)
 
-	client, err := mongo.Connect(options.Client().ApplyURI(databaseURL))
+	client, err := mongo.Connect(clientOpts)
 	if err != nil {
 		log.Fatalf("failed to connect to MongoDB: %v", err)
 	}
@@ -33,6 +40,9 @@ func main() {
 			log.Printf("error disconnecting MongoDB: %v", err)
 		}
 	}()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
 	if err := client.Ping(ctx, nil); err != nil {
 		log.Fatalf("MongoDB ping failed: %v", err)
