@@ -7,7 +7,12 @@ import (
 
 func newShipment(status Status) *Shipment {
 	return &Shipment{
-		ID:        "test-id",
+		ID:            "test-id",
+		TransportMode: TransportModeTruck,
+		CarrierInfo: CarrierInfo{
+			OperatorName:   "John Doe",
+			UnitIdentifier: "KZ-001",
+		},
 		Status:    status,
 		CreatedAt: time.Now().UTC(),
 		UpdatedAt: time.Now().UTC(),
@@ -91,5 +96,50 @@ func TestApplyEvent_DuplicateStatus(t *testing.T) {
 	_, err := s.ApplyEvent(StatusPending, "")
 	if err != ErrDuplicateStatus {
 		t.Fatalf("expected ErrDuplicateStatus, got: %v", err)
+	}
+}
+
+func TestTransportMode_Validate(t *testing.T) {
+	valid := []TransportMode{TransportModeTruck, TransportModeAir, TransportModeSea, TransportModeRail}
+	for _, m := range valid {
+		if err := m.Validate(); err != nil {
+			t.Fatalf("expected valid mode %s, got error: %v", m, err)
+		}
+	}
+
+	if err := TransportMode("HORSE").Validate(); err != ErrInvalidTransportMode {
+		t.Fatalf("expected ErrInvalidTransportMode, got: %v", err)
+	}
+}
+
+func TestCarrierInfo_Validate(t *testing.T) {
+	cases := []struct {
+		name    string
+		carrier CarrierInfo
+		wantErr error
+	}{
+		{
+			name:    "missing operator name",
+			carrier: CarrierInfo{UnitIdentifier: "KZ-001"},
+			wantErr: ErrInvalidCarrier,
+		},
+		{
+			name:    "missing unit identifier",
+			carrier: CarrierInfo{OperatorName: "John"},
+			wantErr: ErrInvalidCarrier,
+		},
+		{
+			name:    "valid carrier",
+			carrier: CarrierInfo{OperatorName: "John", UnitIdentifier: "KZ-001"},
+			wantErr: nil,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if err := tc.carrier.Validate(); err != tc.wantErr {
+				t.Fatalf("expected %v, got %v", tc.wantErr, err)
+			}
+		})
 	}
 }

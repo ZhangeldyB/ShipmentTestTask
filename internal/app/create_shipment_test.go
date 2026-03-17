@@ -9,11 +9,11 @@ import (
 
 // mockRepo is a test double for ShipmentRepository.
 type mockRepo struct {
-	saveFn               func(ctx context.Context, s *domain.Shipment) error
-	findByIDFn           func(ctx context.Context, id string) (*domain.Shipment, error)
-	findByRefFn          func(ctx context.Context, ref string) (*domain.Shipment, error)
-	saveEventFn          func(ctx context.Context, e *domain.ShipmentEvent) error
-	findEventsByIDFn     func(ctx context.Context, shipmentID string) ([]*domain.ShipmentEvent, error)
+	saveFn           func(ctx context.Context, s *domain.Shipment) error
+	findByIDFn       func(ctx context.Context, id string) (*domain.Shipment, error)
+	findByRefFn      func(ctx context.Context, ref string) (*domain.Shipment, error)
+	saveEventFn      func(ctx context.Context, e *domain.ShipmentEvent) error
+	findEventsByIDFn func(ctx context.Context, shipmentID string) ([]*domain.ShipmentEvent, error)
 }
 
 func (m *mockRepo) Save(ctx context.Context, s *domain.Shipment) error {
@@ -51,33 +51,72 @@ func (m *mockRepo) FindEventsByShipmentID(ctx context.Context, shipmentID string
 	return nil, nil
 }
 
+var validInput = CreateShipmentInput{
+	Origin:        "Almaty",
+	Destination:   "Astana",
+	TransportMode: domain.TransportModeTruck,
+	CarrierInfo: domain.CarrierInfo{
+		OperatorName:   "Aibek",
+		OperatorPhone:  "+7700000000",
+		UnitIdentifier: "KZ-001",
+	},
+	Amount:         1000,
+	CarrierRevenue: 700,
+}
+
 func TestCreateShipment_Validation(t *testing.T) {
 	cases := []struct {
-		name      string
-		input     CreateShipmentInput
-		wantErr   error
+		name    string
+		input   CreateShipmentInput
+		wantErr error
 	}{
+		{
+			name: "invalid transport mode",
+			input: CreateShipmentInput{
+				Origin: "A", Destination: "B",
+				TransportMode: "HORSE",
+				CarrierInfo:   domain.CarrierInfo{OperatorName: "X", UnitIdentifier: "Y"},
+				Amount:        100, CarrierRevenue: 50,
+			},
+			wantErr: domain.ErrInvalidTransportMode,
+		},
+		{
+			name: "missing operator name",
+			input: CreateShipmentInput{
+				Origin: "A", Destination: "B",
+				TransportMode: domain.TransportModeTruck,
+				CarrierInfo:   domain.CarrierInfo{UnitIdentifier: "KZ-001"},
+				Amount:        100, CarrierRevenue: 50,
+			},
+			wantErr: domain.ErrInvalidCarrier,
+		},
 		{
 			name: "amount is zero",
 			input: CreateShipmentInput{
 				Origin: "A", Destination: "B",
-				Amount: 0, DriverRevenue: 0,
+				TransportMode: domain.TransportModeTruck,
+				CarrierInfo:   domain.CarrierInfo{OperatorName: "X", UnitIdentifier: "Y"},
+				Amount:        0, CarrierRevenue: 0,
 			},
 			wantErr: domain.ErrInvalidAmount,
 		},
 		{
-			name: "driver revenue exceeds amount",
+			name: "carrier revenue exceeds amount",
 			input: CreateShipmentInput{
 				Origin: "A", Destination: "B",
-				Amount: 100, DriverRevenue: 150,
+				TransportMode: domain.TransportModeTruck,
+				CarrierInfo:   domain.CarrierInfo{OperatorName: "X", UnitIdentifier: "Y"},
+				Amount:        100, CarrierRevenue: 150,
 			},
 			wantErr: domain.ErrInvalidRevenue,
 		},
 		{
-			name: "driver revenue is zero",
+			name: "carrier revenue is zero",
 			input: CreateShipmentInput{
 				Origin: "A", Destination: "B",
-				Amount: 100, DriverRevenue: 0,
+				TransportMode: domain.TransportModeTruck,
+				CarrierInfo:   domain.CarrierInfo{OperatorName: "X", UnitIdentifier: "Y"},
+				Amount:        100, CarrierRevenue: 0,
 			},
 			wantErr: domain.ErrInvalidRevenue,
 		},
@@ -100,17 +139,7 @@ func TestCreateShipment_ValidInput(t *testing.T) {
 	repo := &mockRepo{}
 	uc := NewCreateShipmentUseCase(repo)
 
-	in := CreateShipmentInput{
-		Origin:        "Almaty",
-		Destination:   "Astana",
-		DriverName:    "Aibek",
-		DriverPhone:   "+7700000000",
-		UnitNumber:    "KZ-001",
-		Amount:        1000,
-		DriverRevenue: 700,
-	}
-
-	shipment, err := uc.Execute(context.Background(), in)
+	shipment, err := uc.Execute(context.Background(), validInput)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -122,5 +151,11 @@ func TestCreateShipment_ValidInput(t *testing.T) {
 	}
 	if shipment.ID == "" {
 		t.Fatal("expected non-empty ID")
+	}
+	if shipment.TransportMode != domain.TransportModeTruck {
+		t.Fatalf("expected TRUCK, got %s", shipment.TransportMode)
+	}
+	if shipment.CarrierInfo.OperatorName != validInput.CarrierInfo.OperatorName {
+		t.Fatalf("expected operator %s, got %s", validInput.CarrierInfo.OperatorName, shipment.CarrierInfo.OperatorName)
 	}
 }
