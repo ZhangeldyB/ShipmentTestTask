@@ -6,5 +6,4 @@
 *.dylib
 /bin/
 /server
-gen/
 vendor/
