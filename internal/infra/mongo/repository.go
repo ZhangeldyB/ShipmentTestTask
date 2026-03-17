@@ -40,41 +40,43 @@ func EnsureIndexes(ctx context.Context, db *mongo.Database) error {
 }
 
 func (r *Repository) Save(ctx context.Context, s *domain.Shipment) error {
+	doc := toShipmentDoc(s)
 	_, err := r.db.Collection(shipmentsCollection).ReplaceOne(
 		ctx,
-		bson.M{"_id": s.ID},
-		s,
+		bson.M{"_id": doc.ID},
+		doc,
 		options.Replace().SetUpsert(true),
 	)
 	return err
 }
 
 func (r *Repository) FindByID(ctx context.Context, id string) (*domain.Shipment, error) {
-	var s domain.Shipment
-	err := r.db.Collection(shipmentsCollection).FindOne(ctx, bson.M{"_id": id}).Decode(&s)
+	var doc shipmentDoc
+	err := r.db.Collection(shipmentsCollection).FindOne(ctx, bson.M{"_id": id}).Decode(&doc)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return nil, domain.ErrShipmentNotFound
 		}
 		return nil, err
 	}
-	return &s, nil
+	return toDomainShipment(&doc), nil
 }
 
 func (r *Repository) FindByReferenceNumber(ctx context.Context, ref string) (*domain.Shipment, error) {
-	var s domain.Shipment
-	err := r.db.Collection(shipmentsCollection).FindOne(ctx, bson.M{"reference_number": ref}).Decode(&s)
+	var doc shipmentDoc
+	err := r.db.Collection(shipmentsCollection).FindOne(ctx, bson.M{"reference_number": ref}).Decode(&doc)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return nil, domain.ErrShipmentNotFound
 		}
 		return nil, err
 	}
-	return &s, nil
+	return toDomainShipment(&doc), nil
 }
 
 func (r *Repository) SaveEvent(ctx context.Context, e *domain.ShipmentEvent) error {
-	_, err := r.db.Collection(shipmentEventsCollection).InsertOne(ctx, e)
+	doc := toEventDoc(e)
+	_, err := r.db.Collection(shipmentEventsCollection).InsertOne(ctx, doc)
 	return err
 }
 
@@ -86,9 +88,14 @@ func (r *Repository) FindEventsByShipmentID(ctx context.Context, shipmentID stri
 	}
 	defer cursor.Close(ctx)
 
-	var events []*domain.ShipmentEvent
-	if err := cursor.All(ctx, &events); err != nil {
+	var docs []shipmentEventDoc
+	if err := cursor.All(ctx, &docs); err != nil {
 		return nil, err
+	}
+
+	events := make([]*domain.ShipmentEvent, len(docs))
+	for i := range docs {
+		events[i] = toDomainEvent(&docs[i])
 	}
 	return events, nil
 }
